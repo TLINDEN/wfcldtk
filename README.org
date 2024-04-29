@@ -1,0 +1,8 @@
+** Slots
+| 0,0 | 0,1 | 0,2 |
+| 1,0 | 1,1 | 1,2 |
+| 2,0 | 2,1 | 2,2 |
+
+** TODO
+- add another NewWave*() function to be able to start with a data structure, which includes the tiles, e.g. an LDTK level
+- add another Populate() function to be able to pre-populate the output map using an LDTK level
