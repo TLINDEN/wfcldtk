@@ -8,7 +8,7 @@ import (
 )
 
 type Wave struct {
-	Output                               Tilemap
+	OutputTilemap                        Tilemap
 	Width, Height, Cellsize, Checkpoints int
 	Superposition                        []*Tile // holds all possible tiles
 }
@@ -16,22 +16,24 @@ type Wave struct {
 // feed directly with tiles pre-fabricated by the caller
 func NewWave(tileset image.Image, width, height, cellsize, checkpoints int) Wave {
 	wave := Wave{
-		Width:       width,
-		Height:      height,
-		Cellsize:    cellsize,
-		Checkpoints: checkpoints,
-		Output:      NewTilemap(width, height),
+		Width:         width,
+		Height:        height,
+		Cellsize:      cellsize,
+		Checkpoints:   checkpoints,
+		OutputTilemap: NewTilemap(width, height),
 	}
 
-	wave.SetupSuperposition(tileset)
+	wave.SetupSuperpositionTileset(tileset)
 
 	// FIXME: this is the point where we could pre-populate!
-	wave.Output.Populate(wave.Superposition)
+	wave.OutputTilemap.Populate(wave.Superposition)
 
 	return wave
 }
 
-func (wave *Wave) SetupSuperposition(tileset image.Image) {
+// Create tiles  from the given  tileset, and  put all tiles  into the
+// superposition, which is just a slice of all possible tiles
+func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
 	width := tileset.Bounds().Dx()
 	height := tileset.Bounds().Dy()
 
@@ -54,4 +56,9 @@ func (wave *Wave) SetupSuperposition(tileset image.Image) {
 			}
 		}
 	}
+}
+
+// Collapse the wave
+func (wave *Wave) Collapse() bool {
+	return wave.OutputTilemap.Collapse()
 }

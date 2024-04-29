@@ -33,5 +33,5 @@ func main() {
 	}
 
 	wave := NewWave(tileset, width, height, cellsize, 5)
-	wave.Output.Dump()
+	wave.OutputTilemap.DumpAll()
 }

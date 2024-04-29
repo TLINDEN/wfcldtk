@@ -1,6 +1,9 @@
 package main
 
-import "image"
+import (
+	"fmt"
+	"image"
+)
 
 type Tile struct {
 	Type        string
@@ -28,4 +31,13 @@ func NewTile(img image.Image, checkpoints int) *Tile {
 	}
 
 	return tile
+}
+
+func (tile *Tile) Dump() string {
+	return fmt.Sprintf("  [N:%s E:%s S:%s W:%s]",
+		tile.Constraints[North],
+		tile.Constraints[East],
+		tile.Constraints[South],
+		tile.Constraints[West],
+	)
 }
