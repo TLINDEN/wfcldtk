@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
 	"image"
 	"image/png"
@@ -95,10 +96,36 @@ func GetConstraint(tileimage image.Image, direction Direction, count int) string
 	return res
 }
 
+// convert a color value to a byte array
+func color2byte(color uint32) []byte {
+	bytearray := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bytearray, color)
+	return bytearray
+}
+
+// calculate a hash for the whole image
+func GetImageHash(tile image.Image) string {
+	hash := sha256.New()
+
+	for y := tile.Bounds().Min.Y; y < tile.Bounds().Dy(); y++ {
+		for x := tile.Bounds().Min.X; x < tile.Bounds().Dx(); x++ {
+			r, g, b, a := tile.At(x, y).RGBA()
+			for _, color := range []uint32{r, g, b, a} {
+				_, err := hash.Write(color2byte(color))
+				if err != nil {
+					log.Fatalf("failed to calculate image checksum: %s", err)
+				}
+			}
+		}
+	}
+
+	return fmt.Sprintf("%x", hash.Sum(nil))[:32]
+}
+
 // check if an image is completely transparent
 func ImageIsTransparent(tile image.Image) bool {
-	for x := tile.Bounds().Min.X; x < tile.Bounds().Dx(); x++ {
-		for y := tile.Bounds().Min.Y; y < tile.Bounds().Dy(); y++ {
+	for y := tile.Bounds().Min.Y; y < tile.Bounds().Dy(); y++ {
+		for x := tile.Bounds().Min.X; x < tile.Bounds().Dx(); x++ {
 			_, _, _, alpha := tile.At(x, y).RGBA()
 			if alpha != 0 {
 				return false

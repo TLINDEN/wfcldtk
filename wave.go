@@ -37,8 +37,8 @@ func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
 	width := tileset.Bounds().Dx()
 	height := tileset.Bounds().Dy()
 
-	for x := 0; x < width; x += wave.Cellsize {
-		for y := 0; y < height; y += wave.Cellsize {
+	for y := 0; y < height; y += wave.Cellsize {
+		for x := 0; x < width; x += wave.Cellsize {
 			tileimage, err := GetTileFromSpriteSheet(tileset,
 				x, y, wave.Cellsize, wave.Cellsize)
 			if err != nil {
