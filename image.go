@@ -9,6 +9,9 @@ import (
 	"os"
 )
 
+type Point image.Point
+
+// store an image to disc
 func SavePNG(filename string, img image.Image) error {
 	out, err := os.Create(filename)
 	if err != nil {
@@ -36,6 +39,7 @@ func ImageIsTransparent(tile image.Image) bool {
 	return true
 }
 
+// Extract a subimage from given image at given position, courtesy go-wfc
 func GetTileFromSpriteSheet(img image.Image, x, y, width, height int) (image.Image, error) {
 	// Create new image
 	outputImg := image.NewRGBA(image.Rect(0, 0, width, height))
@@ -50,6 +54,7 @@ func GetTileFromSpriteSheet(img image.Image, x, y, width, height int) (image.Ima
 	return outputImg, nil
 }
 
+// load an image from disc
 func Loadimage(filename string) (image.Image, error) {
 	raw, err := os.Open(filename)
 	if err != nil {

@@ -115,6 +115,7 @@ func (tilemap *Tilemap) GetSlotNeighbor(slot *Slot, direction Direction) *Slot {
 	return tilemap.Slots[point]
 }
 
+// Sort helper, sort Slot slice by tile count, lowest count goes first
 func (tilemap *Tilemap) Sort() {
 	sort.Slice(tilemap.Slotlist, func(left, right int) bool {
 		return tilemap.Slotlist[left].Count() < tilemap.Slotlist[right].Count()
@@ -124,7 +125,13 @@ func (tilemap *Tilemap) Sort() {
 // Try to collapse all slots, recursively
 func (tilemap *Tilemap) Collapse() error {
 	for !tilemap.Collapsed() {
+
+		// we sort the slots by tile count, that way the slot with the
+		// lowest entropy  goes first, which we collapse  at the start
+		// of every loop run.
 		tilemap.Sort()
+
+		// only collapse 1 slot per run
 		collapsing := false
 
 		for _, slot := range tilemap.Slotlist {
@@ -144,11 +151,6 @@ func (tilemap *Tilemap) Collapse() error {
 				collapsing = true
 				continue
 			}
-
-			// if tilemap.SlotVisited(point) {
-			// 	fmt.Println("    slot has already been visited")
-			// 	continue
-			// }
 
 			// for  current slot, look  at each direction  and exclude
 			//  any  tile  which  does  not match  one  of  the  tiles
