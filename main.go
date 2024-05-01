@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	_ "image/png"
 	"log"
 	"os"
@@ -8,7 +9,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 5 {
+	if len(os.Args) != 6 {
 		panic("Usage: app image width height cellsize")
 	}
 
@@ -33,6 +34,13 @@ func main() {
 	}
 
 	wave := NewWave(tileset, width, height, cellsize, 5)
-	wave.Collapse()
+	wave.Collapse() // ignore err for now
 	wave.OutputTilemap.DumpAll()
+
+	err = wave.Export(os.Args[5])
+	if err != nil {
+		log.Fatalf("failed to render: %s", err)
+	}
+
+	fmt.Println("ok")
 }

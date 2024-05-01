@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"sort"
 )
 
 // A Tilemap is a grid of slots. Each slots holds 0-N Tiles (where the
@@ -12,16 +14,17 @@ import (
 type Tilemap struct {
 	Width, Height int
 	Slots         map[Point]*Slot
-	Seenslots     map[Point]bool
+	Slotlist      []*Slot // same content, but used for iterating or sorting
 	Collapsing    bool
 }
 
 // Return a new empty Tilemap
 func NewTilemap(width, height int) Tilemap {
 	return Tilemap{
-		Width:  width,
-		Height: height,
-		Slots:  make(map[Point]*Slot, width*height),
+		Width:    width,
+		Height:   height,
+		Slots:    make(map[Point]*Slot, width*height),
+		Slotlist: make([]*Slot, width*height),
 	}
 }
 
@@ -30,10 +33,14 @@ func NewTilemap(width, height int) Tilemap {
 // reduced ("collapsed") up to the point where only 1 tile is left. At
 // that point it is considered to be in collapsed state.
 func (tilemap *Tilemap) Populate(superposition []*Tile) {
+	pos := 0
+
 	for y := 0; y < tilemap.Height; y++ {
 		for x := 0; x < tilemap.Width; x++ {
 			point := Point{X: x, Y: y}
 			tilemap.Slots[point] = &Slot{PossibleTiles: superposition, Position: point}
+			tilemap.Slotlist[pos] = tilemap.Slots[point]
+			pos++
 		}
 	}
 }
@@ -81,7 +88,7 @@ func (tilemap *Tilemap) Collapsed() bool {
 func (tilemap *Tilemap) Broken() bool {
 	for _, slot := range tilemap.Slots {
 		if slot.Broken() {
-			return false
+			return true
 		}
 	}
 
@@ -108,30 +115,33 @@ func (tilemap *Tilemap) GetSlotNeighbor(slot *Slot, direction Direction) *Slot {
 	return tilemap.Slots[point]
 }
 
-func (tilemap *Tilemap) SlotVisited(point Point) bool {
-	return Exists(tilemap.Seenslots, point)
+func (tilemap *Tilemap) Sort() {
+	sort.Slice(tilemap.Slotlist, func(left, right int) bool {
+		return tilemap.Slotlist[left].Count() < tilemap.Slotlist[right].Count()
+	})
 }
 
 // Try to collapse all slots, recursively
-func (tilemap *Tilemap) Collapse() bool {
-	x := 0
+func (tilemap *Tilemap) Collapse() error {
 	for !tilemap.Collapsed() {
+		tilemap.Sort()
+		collapsing := false
 
-		for point, slot := range tilemap.Slots {
+		for _, slot := range tilemap.Slotlist {
+			point := slot.Position
 			fmt.Printf("looking at slot at point %v\n", point)
-
-			if !tilemap.Collapsing {
-				// very  first slot, collapse  this one and  only this
-				// one initially and completely
-				fmt.Println("    collapsing first")
-				slot.Collapse()
-				tilemap.Collapsing = true
-				continue
-			}
 
 			if slot.Collapsed() {
 				// already collapsed, ignore this time
 				fmt.Println("    ignore already collapsed")
+				continue
+			}
+
+			if !collapsing {
+				// first slot for this round, collapse  this one
+				fmt.Println("    collapsing first")
+				slot.Collapse()
+				collapsing = true
 				continue
 			}
 
@@ -143,8 +153,6 @@ func (tilemap *Tilemap) Collapse() bool {
 			// for  current slot, look  at each direction  and exclude
 			//  any  tile  which  does  not match  one  of  the  tiles
 			// of the neighbor slot.
-			lookedat := 0
-			neighbordone := 0
 			for _, direction := range Directions {
 				fmt.Printf("    looking into direction %d\n", direction)
 				if !tilemap.SlotHasNeighbor(slot, direction) {
@@ -153,34 +161,20 @@ func (tilemap *Tilemap) Collapse() bool {
 				}
 
 				neighborslot := tilemap.GetSlotNeighbor(slot, direction)
-				if neighborslot.Collapsed() {
-					neighbordone++
-				}
 
 				count := slot.Count()
 				slot.Exclude(neighborslot, direction)
 				fmt.Printf("        reduced slot from %d to %d tiles\n", count, slot.Count())
-				lookedat++
-			}
-
-			// FIXME: that's not right!
-			if neighbordone == lookedat {
-				// all neighbors are aleady collapsed, so, collapse current slot as well
-				fmt.Println("    collapsing this")
-				slot.Collapse()
 			}
 		}
 
 		fmt.Println()
-		//tilemap.DumpAll()
-		// if x > 2 {
-		// 	os.Exit(0)
-		// }
-		x++
+
 		if tilemap.Broken() {
-			log.Fatal("tilemap broken")
+			// FIXME: either do backtracking from here OR
+			return errors.New("tilemap broken")
 		}
 	}
 
-	return true
+	return nil
 }
