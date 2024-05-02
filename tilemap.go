@@ -5,7 +5,14 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"time"
 )
+
+type Stats struct {
+	Superpositions, Backtracked, Rounds int
+	Duration                            time.Duration
+	RoundsDuration                      []time.Duration
+}
 
 // A Tilemap is a grid of slots. Each slots holds 0-N Tiles (where the
 // maximum number  of tiles  is the  "superposition").  The  width and
@@ -15,7 +22,9 @@ type Tilemap struct {
 	Width, Height int
 	Slots         map[Point]*Slot
 	Slotlist      []*Slot // same content, but used for iterating or sorting
+	Copylist      []*Slot
 	Collapsing    bool
+	Stats         Stats
 }
 
 // Return a new empty Tilemap
@@ -43,6 +52,24 @@ func (tilemap *Tilemap) Populate(superposition []*Tile) {
 			pos++
 		}
 	}
+
+	tilemap.Stats.Superpositions = len(superposition)
+}
+
+// Make a copy of the current possibility space for backtracking
+func (tilemap *Tilemap) Copy() {
+	for _, slot := range tilemap.Slots {
+		slot.Copy()
+	}
+}
+
+// Restore previous tile set, thus backtrack one step
+func (tilemap *Tilemap) Backtrack() {
+	for _, slot := range tilemap.Slots {
+		slot.Backtrack()
+	}
+
+	tilemap.Stats.Backtracked++
 }
 
 // Print the Tilemap (only coordinate + tile count)
@@ -123,8 +150,15 @@ func (tilemap *Tilemap) Sort() {
 }
 
 // Try to collapse all slots, recursively
-func (tilemap *Tilemap) Collapse() error {
+func (tilemap *Tilemap) Collapse(retries int) error {
+	tries := 0
+	start := time.Now()
+
 	for !tilemap.Collapsed() {
+		//  make a  backup of  the current  state of  the tilemap.  If
+		//  collapsing   fails,  we  can   restore  it  and   thus  do
+		// backtracking.
+		tilemap.Copy()
 
 		// we sort the slots by tile count, that way the slot with the
 		// lowest entropy  goes first, which we collapse  at the start
@@ -173,10 +207,32 @@ func (tilemap *Tilemap) Collapse() error {
 		fmt.Println()
 
 		if tilemap.Broken() {
-			// FIXME: either do backtracking from here OR
-			return errors.New("tilemap broken")
+			if tries < retries {
+				fmt.Println("BACKTRACKING")
+				tilemap.Backtrack()
+			} else {
+				return errors.New("tilemap broken too many times")
+			}
 		}
+
+		elapsed := time.Since(start)
+		tilemap.Stats.Rounds++
+		tilemap.Stats.RoundsDuration = append(tilemap.Stats.RoundsDuration, elapsed)
 	}
 
+	tries++
+
 	return nil
+}
+
+func (tilemap *Tilemap) Printstats() {
+	for _, dur := range tilemap.Stats.RoundsDuration {
+		tilemap.Stats.Duration += dur
+	}
+
+	fmt.Printf("Superpositions: %d\n", tilemap.Stats.Superpositions)
+	fmt.Printf("         Slots: %d\n", len(tilemap.Slots))
+	fmt.Printf("        Rounds: %d\n", tilemap.Stats.Rounds)
+	fmt.Printf("   Backtracked: %d\n", tilemap.Stats.Backtracked)
+	fmt.Printf("    time taken: %s\n", tilemap.Stats.Duration)
 }

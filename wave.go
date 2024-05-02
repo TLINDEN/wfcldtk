@@ -61,8 +61,8 @@ func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
 }
 
 // Collapse the wave
-func (wave *Wave) Collapse() error {
-	return wave.OutputTilemap.Collapse()
+func (wave *Wave) Collapse(retries int) error {
+	return wave.OutputTilemap.Collapse(retries)
 }
 
 func (wave *Wave) Export(filename string) error {

@@ -34,7 +34,7 @@ func main() {
 	}
 
 	wave := NewWave(tileset, width, height, cellsize, 5)
-	wave.Collapse() // ignore err for now
+	wave.Collapse(10) // ignore err for now
 	wave.OutputTilemap.DumpAll()
 
 	err = wave.Export(os.Args[5])
@@ -42,5 +42,6 @@ func main() {
 		log.Fatalf("failed to render: %s", err)
 	}
 
+	wave.OutputTilemap.Printstats()
 	fmt.Println("ok")
 }

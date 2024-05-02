@@ -7,8 +7,9 @@ import (
 
 // one spot in the target map,
 type Slot struct {
-	PossibleTiles []*Tile // starts with superposition
-	Position      Point
+	PossibleTiles         []*Tile // starts with superposition
+	PreviousPossibleTiles []*Tile // backup
+	Position              Point
 }
 
 // Return true if slot is collapsed
@@ -34,6 +35,14 @@ func (slot *Slot) GetTile() *Tile {
 func (slot *Slot) Collapse() {
 	tile := slot.PossibleTiles[rand.Intn(slot.Count())]
 	slot.PossibleTiles = []*Tile{tile}
+}
+
+func (slot *Slot) Copy() {
+	slot.PreviousPossibleTiles = slot.PossibleTiles
+}
+
+func (slot *Slot) Backtrack() {
+	slot.PossibleTiles = slot.PreviousPossibleTiles
 }
 
 /*

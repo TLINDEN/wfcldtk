@@ -6,10 +6,10 @@ cell=100
 
 
 
-all: build render show
-
 build:
 	go build .
+
+test: build render show
 
 render:
 	./wfcldtk $(in) $(w) $(h) $(cell) $(out)
