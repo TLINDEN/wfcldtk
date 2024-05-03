@@ -138,7 +138,9 @@ func (tilemap *Tilemap) GetSlotNeighbor(slot *Slot, direction Direction) *Slot {
 		log.Fatalf("no slot at position %v", point)
 	}
 
-	fmt.Printf("        returning neighbor at slot %v\n", point)
+	if DEBUG {
+		fmt.Printf("        returning neighbor at slot %v\n", point)
+	}
 	return tilemap.Slots[point]
 }
 
@@ -170,17 +172,23 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 
 		for _, slot := range tilemap.Slotlist {
 			point := slot.Position
-			fmt.Printf("looking at slot at point %v\n", point)
+			if DEBUG {
+				fmt.Printf("looking at slot at point %v\n", point)
+			}
 
 			if slot.Collapsed() {
 				// already collapsed, ignore this time
-				fmt.Println("    ignore already collapsed")
+				if DEBUG {
+					fmt.Println("    ignore already collapsed")
+				}
 				continue
 			}
 
 			if !collapsing {
 				// first slot for this round, collapse  this one
-				fmt.Println("    collapsing first")
+				if DEBUG {
+					fmt.Println("    collapsing first")
+				}
 				slot.Collapse()
 				collapsing = true
 				continue
@@ -190,9 +198,13 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 			//  any  tile  which  does  not match  one  of  the  tiles
 			// of the neighbor slot.
 			for _, direction := range Directions {
-				fmt.Printf("    looking into direction %d\n", direction)
+				if DEBUG {
+					fmt.Printf("    looking into direction %d\n", direction)
+				}
 				if !tilemap.SlotHasNeighbor(slot, direction) {
-					fmt.Printf("       slot has no neighbor in direction %d\n", direction)
+					if DEBUG {
+						fmt.Printf("       slot has no neighbor in direction %d\n", direction)
+					}
 					continue
 				}
 
@@ -200,16 +212,25 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 
 				count := slot.Count()
 				slot.Exclude(neighborslot, direction)
-				fmt.Printf("        reduced slot from %d to %d tiles\n", count, slot.Count())
+				if DEBUG {
+					fmt.Printf("        reduced slot from %d to %d tiles\n", count, slot.Count())
+				}
 			}
 		}
 
-		fmt.Println()
+		if DEBUG {
+			fmt.Println()
+		}
 
 		if tilemap.Broken() {
 			if tries < retries {
-				fmt.Println("BACKTRACKING")
+				if DEBUG {
+					fmt.Println("BACKTRACKING")
+				}
 				tilemap.Backtrack()
+
+				//tilemap.Printstats()
+				fmt.Printf("tries: %d, retries: %d\n", tries, retries)
 			} else {
 				return errors.New("tilemap broken too many times")
 			}
@@ -218,9 +239,9 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 		elapsed := time.Since(start)
 		tilemap.Stats.Rounds++
 		tilemap.Stats.RoundsDuration = append(tilemap.Stats.RoundsDuration, elapsed)
-	}
 
-	tries++
+		tries++
+	}
 
 	return nil
 }

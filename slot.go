@@ -68,8 +68,10 @@ func (slot *Slot) Exclude(otherslot *Slot, direction Direction) {
 		for _, tile := range slot.PossibleTiles {
 			if tile.Constraints[direction] == othertile.Constraints[adversedirection] {
 				if !Exists(keeptiles, tile.Id) {
-					fmt.Printf("        matching this dir %d %s <=> other dir %d %s\n",
-						direction, tile.Constraints[direction], adversedirection, othertile.Constraints[adversedirection])
+					if DEBUG {
+						fmt.Printf("        matching this dir %d %s <=> other dir %d %s\n",
+							direction, tile.Constraints[direction], adversedirection, othertile.Constraints[adversedirection])
+					}
 
 					keeptiles[tile.Id] = tile
 				}
@@ -80,7 +82,9 @@ func (slot *Slot) Exclude(otherslot *Slot, direction Direction) {
 	newtiles := make([]*Tile, len(keeptiles))
 	i := 0
 	for checksum := range keeptiles {
-		fmt.Printf("            %s\n", checksum)
+		if DEBUG {
+			fmt.Printf("            %s\n", checksum)
+		}
 		newtiles[i] = keeptiles[checksum]
 
 		i++

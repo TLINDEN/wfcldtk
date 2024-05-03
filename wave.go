@@ -9,6 +9,8 @@ import (
 	"log"
 )
 
+var DEBUG bool
+
 type Wave struct {
 	OutputTilemap                        Tilemap
 	Width, Height, Cellsize, Checkpoints int
