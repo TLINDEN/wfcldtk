@@ -154,9 +154,10 @@ func (tilemap *Tilemap) Sort() {
 // Try to collapse all slots, recursively
 func (tilemap *Tilemap) Collapse(retries int) error {
 	tries := 0
-	start := time.Now()
 
 	for !tilemap.Collapsed() {
+		start := time.Now()
+
 		//  make a  backup of  the current  state of  the tilemap.  If
 		//  collapsing   fails,  we  can   restore  it  and   thus  do
 		// backtracking.
@@ -194,6 +195,8 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 				continue
 			}
 
+			neighbors := make([]*Slot, 4)
+
 			// for  current slot, look  at each direction  and exclude
 			//  any  tile  which  does  not match  one  of  the  tiles
 			// of the neighbor slot.
@@ -209,12 +212,15 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 				}
 
 				neighborslot := tilemap.GetSlotNeighbor(slot, direction)
+				neighbors[direction] = neighborslot
 
-				count := slot.Count()
-				slot.Exclude(neighborslot, direction)
-				if DEBUG {
-					fmt.Printf("        reduced slot from %d to %d tiles\n", count, slot.Count())
-				}
+				slot.CollapseByConstraints(neighbors)
+
+				// count := slot.Count()
+				// slot.Exclude(neighborslot, direction)
+				// if DEBUG {
+				// 	fmt.Printf("        reduced slot from %d to %d tiles\n", count, slot.Count())
+				// }
 			}
 		}
 
@@ -231,7 +237,9 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 
 				//tilemap.Printstats()
 				fmt.Printf("tries: %d, retries: %d\n", tries, retries)
+				tries++
 			} else {
+				fmt.Printf("error tries: %d, retries: %d\n", tries, retries)
 				return errors.New("tilemap broken too many times")
 			}
 		}
@@ -240,8 +248,9 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 		tilemap.Stats.Rounds++
 		tilemap.Stats.RoundsDuration = append(tilemap.Stats.RoundsDuration, elapsed)
 
-		tries++
 	}
+
+	fmt.Printf("Collapsed: %t, Broken: %t\n", tilemap.Collapsed(), tilemap.Broken())
 
 	return nil
 }

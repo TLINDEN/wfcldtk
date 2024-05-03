@@ -59,7 +59,7 @@ slot.dir     other.adverse
 
 	east   =>  west
 */
-func (slot *Slot) Exclude(otherslot *Slot, direction Direction) {
+func (slot *Slot) Exclude(otherslot *Slot, direction Direction) map[string]*Tile {
 	adversedirection := GetAdverseDir(direction)
 
 	keeptiles := map[string]*Tile{}
@@ -70,7 +70,8 @@ func (slot *Slot) Exclude(otherslot *Slot, direction Direction) {
 				if !Exists(keeptiles, tile.Id) {
 					if DEBUG {
 						fmt.Printf("        matching this dir %d %s <=> other dir %d %s\n",
-							direction, tile.Constraints[direction], adversedirection, othertile.Constraints[adversedirection])
+							direction, tile.Constraints[direction], adversedirection,
+							othertile.Constraints[adversedirection])
 					}
 
 					keeptiles[tile.Id] = tile
@@ -79,16 +80,47 @@ func (slot *Slot) Exclude(otherslot *Slot, direction Direction) {
 		}
 	}
 
-	newtiles := make([]*Tile, len(keeptiles))
-	i := 0
-	for checksum := range keeptiles {
-		if DEBUG {
-			fmt.Printf("            %s\n", checksum)
-		}
-		newtiles[i] = keeptiles[checksum]
+	return keeptiles
+}
 
-		i++
+// Collapse    possible   tiles    on    this    slot   by    neighbor
+// constraints.  Neighbors  are  given  in the  slice  arg,  index  ==
+// direction, empty slice item means no neighbor in that direction
+func (slot *Slot) CollapseByConstraints(neighbors []*Slot) {
+	neighborcount := 0
+	tileregistry := map[string]*Tile{}
+	tilecounter := map[string]int{}
+
+	// check all neighbor slots
+	for direction, otherslot := range neighbors {
+		if otherslot == nil {
+			continue
+		}
+
+		// register how many neighbors there are
+		neighborcount++
+
+		//  for  every registered  neighbor in  the given  direction
+		// fetch all tiles matching the neighbor constraint
+		tiles := slot.Exclude(otherslot, Direction(direction))
+
+		// count each matching tile
+		for id, tile := range tiles {
+			tileregistry[id] = tile
+			tilecounter[id]++
+		}
 	}
 
+	newtiles := []*Tile{}
+
+	// check  which tiles  are possible matches  on ALL  neighbors and
+	// register them
+	for id, count := range tilecounter {
+		if count == neighborcount {
+			newtiles = append(newtiles, tileregistry[id])
+		}
+	}
+
+	// set possible tiles to the new reduced tile slice
 	slot.PossibleTiles = newtiles
 }

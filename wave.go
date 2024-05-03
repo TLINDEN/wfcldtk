@@ -49,8 +49,10 @@ func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
 				log.Fatalf("failed to load tile image: %s\n", err)
 			}
 
-			file := fmt.Sprintf("images/tile-debug-%d-%d.png", x, y)
-			SavePNG(file, tileimage)
+			if DEBUG {
+				file := fmt.Sprintf("images/tile-debug-%d-%d.png", x, y)
+				SavePNG(file, tileimage)
+			}
 
 			if !ImageIsTransparent(tileimage) {
 				wave.Superposition = append(wave.Superposition,

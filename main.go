@@ -34,7 +34,7 @@ func main() {
 	}
 
 	wave := NewWave(tileset, width, height, cellsize, 5)
-	wave.Collapse(10) // ignore err for now
+	wave.Collapse(100) // ignore err for now
 	wave.OutputTilemap.Dump()
 
 	err = wave.Export(os.Args[5])
