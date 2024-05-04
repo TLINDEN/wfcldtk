@@ -18,7 +18,9 @@ type Wave struct {
 }
 
 // feed directly with tiles pre-fabricated by the caller
-func NewWave(tileset image.Image, width, height, cellsize, checkpoints int) Wave {
+func NewWaveFromTileset(tileset image.Image,
+	width, height, cellsize, checkpoints int) Wave {
+
 	wave := Wave{
 		Width:         width,
 		Height:        height,
@@ -28,6 +30,27 @@ func NewWave(tileset image.Image, width, height, cellsize, checkpoints int) Wave
 	}
 
 	wave.SetupSuperpositionTileset(tileset)
+
+	// FIXME: this is the point where we could pre-populate!
+	wave.OutputTilemap.Populate(wave.Superposition)
+
+	return wave
+}
+
+func NewWaveFromProject(projectname, level string, width, height, checkpoints int) Wave {
+
+	wave := Wave{
+		Checkpoints: checkpoints,
+		Width:       width,
+		Height:      height,
+	}
+
+	project := LDTKLoadProjectFile(projectname)
+	wave.Cellsize = LDTKGetCellsize(project, level)
+
+	wave.OutputTilemap = NewTilemap(wave.Width, wave.Height)
+
+	wave.SetupSuperpositionLDTK(project, level)
 
 	// FIXME: this is the point where we could pre-populate!
 	wave.OutputTilemap.Populate(wave.Superposition)
@@ -62,6 +85,11 @@ func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
 			}
 		}
 	}
+}
+
+// Same thing, but use an LDTK project file as the source
+func (wave *Wave) SetupSuperpositionLDTK(project LDTKProject, level string) {
+	wave.Superposition = LDTKLoadLevel(project, level, wave.Checkpoints)
 }
 
 // Collapse the wave
