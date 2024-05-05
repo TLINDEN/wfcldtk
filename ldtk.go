@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -81,16 +80,16 @@ func GetPropertyToggleTile(entity *ldtkgo.Entity, togglename string) *TileSetSub
 }
 
 // load LDTK project from disk
-func LDTKLoadProjectFile(file string) LDTKProject {
+func LDTKLoadProjectFile(file string) (*LDTKProject, error) {
 	fd, err := os.Open(file)
 	if err != nil {
-		log.Fatalf("failed to open LDTK file %s: %s", file, err)
+		return nil, fmt.Errorf("failed to open LDTK file %s: %w", file, err)
 	}
 	defer fd.Close()
 
 	fileinfo, err := fd.Stat()
 	if err != nil {
-		log.Fatalf("failed to stat() LDTK file %s: %s", file, err)
+		return nil, fmt.Errorf("failed to stat() LDTK file %s: %w", file, err)
 	}
 
 	filesize := fileinfo.Size()
@@ -98,7 +97,7 @@ func LDTKLoadProjectFile(file string) LDTKProject {
 
 	_, err = fd.Read(buffer)
 	if err != nil {
-		log.Fatalf("failed to read bytes from LDTK file %s: %s", file, err)
+		return nil, fmt.Errorf("failed to read bytes from LDTK file %s: %w", file, err)
 	}
 
 	ldtkproject, err := ldtkgo.Read(buffer)
@@ -108,10 +107,10 @@ func LDTKLoadProjectFile(file string) LDTKProject {
 
 	basepath := filepath.Dir(file)
 
-	return LDTKProject{Project: ldtkproject, Directory: basepath}
+	return &LDTKProject{Project: ldtkproject, Directory: basepath}, nil
 }
 
-func LDTKGetCellsize(project LDTKProject, identifier string) int {
+func LDTKGetCellsize(project *LDTKProject, identifier string) int {
 	level := &ldtkgo.Level{}
 
 	for _, lvl := range project.Project.Levels {
@@ -132,8 +131,8 @@ func LDTKGetCellsize(project LDTKProject, identifier string) int {
 }
 
 // load superposition tile array from named LDTK level
-func LDTKLoadLevel(project LDTKProject, identifier string, checkpoints int) []*Tile {
-	superposition := []*Tile{}
+func LDTKLoadLevel(project *LDTKProject, identifier string, checkpoints int) (Superposition, error) {
+	superposition := Superposition{}
 
 	level := &ldtkgo.Level{}
 
@@ -152,7 +151,7 @@ func LDTKLoadLevel(project LDTKProject, identifier string, checkpoints int) []*T
 
 			tilemap, err := Loadimage(project.Directory + "/" + tileset.Path)
 			if err != nil {
-				log.Fatalf("failed to load tileset %s: %s", tileset.Path, err)
+				return nil, fmt.Errorf("failed to load tileset %s: %w", tileset.Path, err)
 			}
 
 			for _, tileData := range layer.AllTiles() {
@@ -164,10 +163,14 @@ func LDTKLoadLevel(project LDTKProject, identifier string, checkpoints int) []*T
 					layer.GridSize,
 					layer.GridSize)
 				if err != nil {
-					log.Fatalf("failed to load subimage from %s: %s", tileset.Path, err)
+					return nil, fmt.Errorf("failed to load subimage from %s: %w", tileset.Path, err)
 				}
 
-				tile := NewTile(tileimage, checkpoints)
+				tile, err := NewTile(tileimage, checkpoints)
+				if err != nil {
+					return nil, nil
+				}
+
 				superposition = append(superposition, tile)
 
 				if DEBUG {
@@ -181,5 +184,5 @@ func LDTKLoadLevel(project LDTKProject, identifier string, checkpoints int) []*T
 		}
 	}
 
-	return superposition
+	return superposition, nil
 }

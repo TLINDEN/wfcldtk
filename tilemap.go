@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"time"
 )
@@ -41,7 +40,7 @@ func NewTilemap(width, height int) Tilemap {
 // slot on the target  map. The tiles in each slot  will be later then
 // reduced ("collapsed") up to the point where only 1 tile is left. At
 // that point it is considered to be in collapsed state.
-func (tilemap *Tilemap) Populate(superposition []*Tile) {
+func (tilemap *Tilemap) Populate(superposition Superposition) {
 	pos := 0
 
 	for y := 0; y < tilemap.Height; y++ {
@@ -131,17 +130,17 @@ func (tilemap *Tilemap) SlotHasNeighbor(slot *Slot, direction Direction) bool {
 }
 
 // Returns neighbor slot to the given direction, if any
-func (tilemap *Tilemap) GetSlotNeighbor(slot *Slot, direction Direction) *Slot {
+func (tilemap *Tilemap) GetSlotNeighbor(slot *Slot, direction Direction) (*Slot, error) {
 	point := slot.Position.MoveDirection(direction)
 
 	if !Exists(tilemap.Slots, point) {
-		log.Fatalf("no slot at position %v", point)
+		return nil, fmt.Errorf("no slot at position %v", point)
 	}
 
 	if DEBUG {
 		fmt.Printf("        returning neighbor at slot %v\n", point)
 	}
-	return tilemap.Slots[point]
+	return tilemap.Slots[point], nil
 }
 
 // Sort helper, sort Slot slice by tile count, lowest count goes first
@@ -211,16 +210,14 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 					continue
 				}
 
-				neighborslot := tilemap.GetSlotNeighbor(slot, direction)
+				neighborslot, err := tilemap.GetSlotNeighbor(slot, direction)
+				if err != nil {
+					return err
+				}
+
 				neighbors[direction] = neighborslot
 
 				slot.CollapseByConstraints(neighbors)
-
-				// count := slot.Count()
-				// slot.Exclude(neighborslot, direction)
-				// if DEBUG {
-				// 	fmt.Printf("        reduced slot from %d to %d tiles\n", count, slot.Count())
-				// }
 			}
 		}
 

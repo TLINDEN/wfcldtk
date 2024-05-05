@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"image/png"
-	"log"
 	"os"
 )
 
@@ -71,7 +70,7 @@ func Loadimage(filename string) (image.Image, error) {
 }
 
 // calculate a hash for the whole image
-func GetImageHash(tile image.Image) string {
+func GetImageHash(tile image.Image) (string, error) {
 	hash := sha256.New()
 
 	for y := tile.Bounds().Min.Y; y < tile.Bounds().Dy(); y++ {
@@ -80,11 +79,11 @@ func GetImageHash(tile image.Image) string {
 			for _, color := range []uint32{r, g, b, a} {
 				_, err := hash.Write(color2byte(color))
 				if err != nil {
-					log.Fatalf("failed to calculate image checksum: %s", err)
+					return "", fmt.Errorf("failed to calculate image checksum: %w", err)
 				}
 			}
 		}
 	}
 
-	return fmt.Sprintf("%x", hash.Sum(nil))[:32]
+	return fmt.Sprintf("%x", hash.Sum(nil))[:32], nil
 }

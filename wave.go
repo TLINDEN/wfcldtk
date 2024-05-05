@@ -5,8 +5,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-
-	"log"
 )
 
 var DEBUG bool
@@ -14,7 +12,7 @@ var DEBUG bool
 type Wave struct {
 	OutputTilemap                        Tilemap
 	Width, Height, Cellsize, Checkpoints int
-	Superposition                        []*Tile // holds all possible tiles
+	Superposition                        Superposition // holds all possible tiles
 }
 
 // feed directly with tiles pre-fabricated by the caller
@@ -37,15 +35,19 @@ func NewWaveFromTileset(tileset image.Image,
 	return wave
 }
 
-func NewWaveFromProject(projectname, level string, width, height, checkpoints int) Wave {
+func NewWaveFromProject(projectname, level string, width, height, checkpoints int) (*Wave, error) {
 
-	wave := Wave{
+	wave := &Wave{
 		Checkpoints: checkpoints,
 		Width:       width,
 		Height:      height,
 	}
 
-	project := LDTKLoadProjectFile(projectname)
+	project, err := LDTKLoadProjectFile(projectname)
+	if err != nil {
+		return nil, err
+	}
+
 	wave.Cellsize = LDTKGetCellsize(project, level)
 
 	wave.OutputTilemap = NewTilemap(wave.Width, wave.Height)
@@ -55,12 +57,12 @@ func NewWaveFromProject(projectname, level string, width, height, checkpoints in
 	// FIXME: this is the point where we could pre-populate!
 	wave.OutputTilemap.Populate(wave.Superposition)
 
-	return wave
+	return wave, nil
 }
 
 // Create tiles  from the given  tileset, and  put all tiles  into the
 // superposition, which is just a slice of all possible tiles
-func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
+func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) error {
 	width := tileset.Bounds().Dx()
 	height := tileset.Bounds().Dy()
 
@@ -69,7 +71,7 @@ func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
 			tileimage, err := GetTileFromSpriteSheet(tileset,
 				x, y, wave.Cellsize, wave.Cellsize)
 			if err != nil {
-				log.Fatalf("failed to load tile image: %s\n", err)
+				return fmt.Errorf("failed to load tile image: %w", err)
 			}
 
 			if DEBUG {
@@ -78,18 +80,29 @@ func (wave *Wave) SetupSuperpositionTileset(tileset image.Image) {
 			}
 
 			if !ImageIsTransparent(tileimage) {
-				wave.Superposition = append(wave.Superposition,
-					//NewTile(tileimage, x, y, wave.Checkpoints),
-					NewTile(tileimage, wave.Checkpoints),
-				)
+				tile, err := NewTile(tileimage, wave.Checkpoints)
+				if err != nil {
+					return err
+				}
+
+				wave.Superposition = append(wave.Superposition, tile)
 			}
 		}
 	}
+
+	return nil
 }
 
 // Same thing, but use an LDTK project file as the source
-func (wave *Wave) SetupSuperpositionLDTK(project LDTKProject, level string) {
-	wave.Superposition = LDTKLoadLevel(project, level, wave.Checkpoints)
+func (wave *Wave) SetupSuperpositionLDTK(project *LDTKProject, level string) error {
+	superposition, err := LDTKLoadLevel(project, level, wave.Checkpoints)
+	if err != nil {
+		return err
+	}
+
+	wave.Superposition = superposition
+
+	return nil
 }
 
 // Collapse the wave

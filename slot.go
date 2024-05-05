@@ -7,8 +7,8 @@ import (
 
 // one spot in the target map,
 type Slot struct {
-	PossibleTiles         []*Tile // starts with superposition
-	PreviousPossibleTiles []*Tile // backup
+	PossibleTiles         Superposition // starts with superposition
+	PreviousPossibleTiles Superposition // backup
 	Position              Point
 }
 
@@ -34,7 +34,7 @@ func (slot *Slot) GetTile() *Tile {
 
 func (slot *Slot) Collapse() {
 	tile := slot.PossibleTiles[rand.Intn(slot.Count())]
-	slot.PossibleTiles = []*Tile{tile}
+	slot.PossibleTiles = Superposition{tile}
 }
 
 func (slot *Slot) Copy() {
@@ -111,7 +111,7 @@ func (slot *Slot) CollapseByConstraints(neighbors []*Slot) {
 		}
 	}
 
-	newtiles := []*Tile{}
+	newtiles := Superposition{}
 
 	// check  which tiles  are possible matches  on ALL  neighbors and
 	// register them
