@@ -149,37 +149,35 @@ func LDTKLoadLevel(project LDTKProject, identifier string, checkpoints int) []*T
 		case ldtkgo.LayerTypeTile:
 			// load tile from LDTK tile layer
 			tileset := layer.Tileset
+
 			tilemap, err := Loadimage(project.Directory + "/" + tileset.Path)
 			if err != nil {
 				log.Fatalf("failed to load tileset %s: %s", tileset.Path, err)
 			}
 
-			if tiles := layer.AllTiles(); len(tiles) > 0 {
-				for _, tileData := range tiles {
-					// fetch current tile from current level from current tileset
-					// FIXME: measurements are wrong!
-					panic("check measurements!")
-					tileimage, err := GetTileFromSpriteSheet(
-						tilemap,
+			for _, tileData := range layer.AllTiles() {
+				// fetch current tile from current level from current tileset
+				tileimage, err := GetTileFromSpriteSheet(
+					tilemap,
+					tileData.Src[0],
+					tileData.Src[1],
+					layer.GridSize,
+					layer.GridSize)
+				if err != nil {
+					log.Fatalf("failed to load subimage from %s: %s", tileset.Path, err)
+				}
+
+				tile := NewTile(tileimage, checkpoints)
+				superposition = append(superposition, tile)
+
+				if DEBUG {
+					file := fmt.Sprintf("images/tile-debug-%d-%d.png",
 						tileData.Src[0],
-						tileData.Src[1],
-						tileData.Src[0]+layer.GridSize,
-						tileData.Src[1]+layer.GridSize)
-					if err != nil {
-						log.Fatalf("failed to load subimage from %s: %s", tileset.Path, err)
-					}
-
-					tile := NewTile(tileimage, checkpoints)
-					superposition = append(superposition, tile)
-
-					if DEBUG {
-						file := fmt.Sprintf("images/tile-debug-%d-%d.png",
-							tileData.Src[0],
-							tileData.Src[1])
-						SavePNG(file, tileimage)
-					}
+						tileData.Src[1])
+					SavePNG(file, tileimage)
 				}
 			}
+
 		}
 	}
 
