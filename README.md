@@ -16,9 +16,9 @@ The tool is work in progress.
 
 ## Example
 
-This level has been generated using [this tileset](https://github.com/TLINDEN/wfcldtk/blob/main/inputtilemap.png)
+This level has been generated using [this tileset](https://github.com/TLINDEN/wfcldtk/blob/main/images/inputtilemap.png)
 
-![example-output](https://github.com/TLINDEN/wfcldtk/blob/main/output.png)
+![example-output](https://github.com/TLINDEN/wfcldtk/blob/main/images/output.png)
 
 The commandline to generate it was:
 
