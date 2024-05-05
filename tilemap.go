@@ -217,8 +217,8 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 
 				neighbors[direction] = neighborslot
 
-				slot.CollapseByConstraints(neighbors)
 			}
+			slot.CollapseByConstraints(neighbors)
 		}
 
 		if DEBUG {
