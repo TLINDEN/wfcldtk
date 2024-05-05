@@ -3,69 +3,73 @@ package main
 import (
 	"fmt"
 	_ "image/png"
+	"io"
 	"log"
 	"os"
-	"strconv"
 )
 
+func Die(err error) int {
+	log.Fatal("Error: ", err.Error())
+
+	return 1
+}
+
 func main() {
-	if len(os.Args) < 6 {
-		panic("Usage: ./wfcldtk ldtk-project level width height debug")
-	}
+	os.Exit(Main(os.Stdout))
+}
 
-	project := os.Args[1]
-	level := os.Args[2]
-	outputfile := os.Args[3]
+func TMain() int {
+	return Main(os.Stdout)
+}
 
-	width, err := strconv.Atoi(os.Args[4])
+func Main(output io.Writer) int {
+	conf, err := InitConfig(output)
 	if err != nil {
-		log.Fatalf("failed to parse width: %s\n", err)
+		return Die(err)
 	}
 
-	height, err := strconv.Atoi(os.Args[5])
-	if err != nil {
-		log.Fatalf("failed to parse height: %s\n", err)
-	}
-
-	if len(os.Args) > 6 {
+	if conf.Debug {
 		DEBUG = true
 	}
 
-	wave, err := NewWaveFromProject(project, level, width, height, 5)
+	if conf.Project == "" || conf.Level == "" {
+		Die(fmt.Errorf("mandatory parameters -p and -l missing"))
+	}
+
+	wave, err := NewWaveFromProject(conf.Project, conf.Level, conf.Width, conf.Height, conf.Checkpoints)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, tile := range wave.Superposition {
-		fmt.Println(tile.Dump())
+	if conf.Debug {
+		fmt.Println("Superposition:")
+		for _, tile := range wave.Superposition {
+			fmt.Println(tile.Dump())
+		}
 	}
 
-	wave.Collapse(100) // ignore err for now
-
-	err = wave.Export(outputfile)
+	err = wave.Collapse(100)
 	if err != nil {
-		log.Fatalf("failed to render: %s", err)
+		Die(err)
+	}
+
+	if conf.Outputimage != "" {
+		err = wave.Export(conf.Outputimage)
+		if err != nil {
+			log.Fatalf("failed to render: %s", err)
+		}
 	}
 
 	wave.OutputTilemap.Printstats()
 	fmt.Println("ok")
 
-	// width, err := strconv.Atoi(os.Args[3])
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to parse width: %s\n", err)
-	// }
+	return 0
+}
 
-	// height, err := strconv.Atoi(os.Args[4])
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to parse height: %s\n", err)
-	// }
+/*
 
-	// cellsize, err := strconv.Atoi(os.Args[5])
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to parse cellsize: %s\n", err)
-	// }
+   older variant, still implemented:
 
-	/*
 		tileset, err := Loadimage(os.Args[1])
 		if err != nil {
 			return nil, fmt.Errorf("failed to load image: %s\n", err)
@@ -82,5 +86,4 @@ func main() {
 
 		wave.OutputTilemap.Printstats()
 		fmt.Println("ok")
-	*/
-}
+*/
