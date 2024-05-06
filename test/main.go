@@ -43,12 +43,12 @@ type Layer struct {
 }
 
 type Level struct {
-	BGColor         string  `json:"bgColor"`
-	BGPivotX        float64 `json:"bgPivotX"`
-	BGPivotY        float64 `json:"bgPivotY"`
-	BGPos           float64 `json:"bgPos"`
-	BGRelPath       string  `json:"bgRelPath"`
-	ExternalRelPath string  `json:"externalRelPath"`
+	BGColor         string   `json:"bgColor"`
+	BGPivotX        float64  `json:"bgPivotX"`
+	BGPivotY        float64  `json:"bgPivotY"`
+	BGPos           *float64 `json:"bgPos"`
+	BGRelPath       string   `json:"bgRelPath"`
+	ExternalRelPath string   `json:"externalRelPath"`
 	Identifier      string
 	Iid             string
 	Layers          []Layer `json:"layerInstances"`
