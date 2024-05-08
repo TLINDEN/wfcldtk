@@ -23,7 +23,7 @@ type Tile struct {
 	Position []int `json:"px"`  // pixel position on target tileset
 	Src      []int `json:"src"` // pixel position of tile from source tileset
 	Flip     byte  `json:"f"`
-	ID       int   `json:"t"`
+	ID       int   `json:"t"` // id of the source tile!
 }
 
 type Layer struct {
@@ -49,9 +49,13 @@ type Level struct {
 	BGPos           *float64 `json:"bgPos"`
 	BGRelPath       string   `json:"bgRelPath"`
 	ExternalRelPath string   `json:"externalRelPath"`
-	Identifier      string
+	Identifier      string   `json:"identifier"`
 	Iid             string
 	Layers          []Layer `json:"layerInstances"`
+	Width           float64 `json:"pxWid"`
+	Height          float64 `json:"pxHei"`
+	WorldX          float64 `json:"worldX"`
+	WorldY          float64 `json:"worldY"`
 }
 
 func main() {
@@ -84,6 +88,10 @@ func main() {
 		BGPivotY:   0.5,
 		Identifier: "testing",
 		Iid:        "4502d4bc-38dd-4903-85c6-bcef7ad90208",
+		Width:      200,
+		Height:     200,
+		WorldX:     300,
+		WorldY:     0,
 		Layers: []Layer{
 			{
 				Iid:            "78a5edb8-176c-4af6-b130-38deac0047db",
@@ -98,22 +106,22 @@ func main() {
 				TilesetDefUid:  1,
 				TilesetRelPath: "inputtilemap.png",
 				Tiles: []*Tile{
-					&Tile{
+					{
 						Position: []int{0, 0},
 						Src:      []int{0, 0},
 						ID:       0,
 					},
-					&Tile{
+					{
 						Position: []int{100, 0},
 						Src:      []int{0, 0},
 						ID:       0,
 					},
-					&Tile{
+					{
 						Position: []int{100, 0},
 						Src:      []int{0, 0},
 						ID:       0,
 					},
-					&Tile{
+					{
 						Position: []int{100, 100},
 						Src:      []int{0, 0},
 						ID:       0,
@@ -124,10 +132,12 @@ func main() {
 	}
 
 	// add it to existing one
-	levels = append(levels, mylevel)
+	//levels = append(levels, mylevel)
 
 	// insert into primary JSON
-	finaljson, _ := sjson.Set(jsonstr, "levels", levels)
+	finaljson, _ := sjson.Set(jsonstr, "levels.-1", mylevel)
+	finaljson, _ = sjson.Set(finaljson, "worldGridHeight", 500)
+	finaljson, _ = sjson.Set(finaljson, "worldGridWidth", 500)
 
 	fmt.Println(finaljson)
 	os.Exit(0)
