@@ -52,6 +52,7 @@ Options:
 	DefaultWidth       int = 4
 	DefaultHeight      int = 4
 	DefaultCheckpoints int = 5
+	DefaultBlocksize       = 4.0
 )
 
 type Config struct {

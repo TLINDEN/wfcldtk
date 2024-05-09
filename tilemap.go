@@ -21,9 +21,10 @@ type Tilemap struct {
 	Width, Height int
 	Slots         map[Point]*Slot
 	Slotlist      []*Slot // same content, but used for iterating or sorting
-	Copylist      []*Slot
+	Copylist      []*Slot // for backtracking
 	Collapsing    bool
 	Stats         Stats
+	Superposition Superposition
 }
 
 // Return a new empty Tilemap
@@ -34,6 +35,56 @@ func NewTilemap(width, height int) Tilemap {
 		Slots:    make(map[Point]*Slot, width*height),
 		Slotlist: make([]*Slot, width*height),
 	}
+}
+
+// Create a sub-tilemap out of  the whole tilemap. Max width+height is
+// DefaultBlocksize,  but  it  maybe  smaller, depending  how  far  we
+// already reached towards the edge.
+func (tilemap *Tilemap) CutBlock(x, y int) *Tilemap {
+	newtilemap := &Tilemap{}
+	newtilemap.Slots = make(map[Point]*Slot, DefaultBlocksize*DefaultBlocksize)
+	newtilemap.Slotlist = make([]*Slot, DefaultBlocksize*DefaultBlocksize)
+
+	pos := 0
+	done := false
+
+	if DEBUG {
+		for point := range tilemap.Slots {
+			fmt.Printf("tilemap point: %v\n", point)
+		}
+	}
+
+	for virty := y; virty < DefaultBlocksize; virty++ {
+		if virty > tilemap.Height {
+			break
+		}
+
+		newtilemap.Width = 0
+		for virtx := y; virtx < DefaultBlocksize; virtx++ {
+			if virtx > tilemap.Width {
+				done = true
+			}
+
+			point := Point{X: virtx, Y: virty}
+
+			if DEBUG {
+				fmt.Printf("point: %v pos: %d\n", point, pos)
+			}
+			newtilemap.Slots[point] = tilemap.Slots[point]
+			newtilemap.Slotlist[pos] = tilemap.Slots[point]
+
+			pos++
+			newtilemap.Width++
+		}
+
+		if done {
+			break
+		}
+
+		newtilemap.Height++
+	}
+
+	return newtilemap
 }
 
 // Put all possible tiles we have (known as "superposition") into each
@@ -53,6 +104,7 @@ func (tilemap *Tilemap) Populate(superposition Superposition) {
 	}
 
 	tilemap.Stats.Superpositions = len(superposition)
+	tilemap.Superposition = superposition
 }
 
 // Make a copy of the current possibility space for backtracking
@@ -83,6 +135,7 @@ func (tilemap *Tilemap) DumpAll() {
 
 // Actual dumper implementation
 func (tilemap *Tilemap) DumpData(full bool) {
+	fmt.Printf("tilemap H: %d, W:%d\n", tilemap.Height, tilemap.Width)
 	for y := 0; y < tilemap.Height; y++ {
 		for x := 0; x < tilemap.Width; x++ {
 			point := Point{X: x, Y: y}
@@ -248,6 +301,52 @@ func (tilemap *Tilemap) Collapse(retries int) error {
 	}
 
 	fmt.Printf("Collapsed: %t, Broken: %t\n", tilemap.Collapsed(), tilemap.Broken())
+
+	return nil
+}
+
+// find the simplest tile
+// FIXME: what to do if there's no simple tile with 4 identical constraints?
+func (tilemap *Tilemap) FindSimpleTile() *Tile {
+	simpletile := &Tile{}
+
+	for _, tile := range tilemap.Superposition {
+		if tile.IsSimple() {
+			simpletile = tile
+		}
+	}
+
+	return simpletile
+}
+
+func (tilemap *Tilemap) CollapseBlocks() error {
+	x := 0
+	y := 0
+
+	simpletile := tilemap.FindSimpleTile()
+
+	for {
+		block := tilemap.CutBlock(x, y)
+		if len(block.Slots) == 0 {
+			// we are done
+			break
+		}
+
+		x += block.Width
+		y += block.Height
+
+		/*
+						 FIXME/TODO:
+			             - assign the simple tile to each block.slot
+						 - iterate over each block.slot, but check the outside tilemap
+						   neighbor like tilemap.SlotHasNeighbor(a block.Slot)
+						 - reduce the tiles based on this neighbor
+				         - do this with all slots
+						 - when done: find the slot with the lowest entropy
+						 - collapse it
+						 - then propagate towards all slots inside the block and only the block
+		*/
+	}
 
 	return nil
 }

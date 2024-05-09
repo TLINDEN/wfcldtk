@@ -10,9 +10,10 @@ import (
 var DEBUG bool
 
 type Wave struct {
-	OutputTilemap                        Tilemap
-	Width, Height, Cellsize, Checkpoints int
-	Superposition                        Superposition // holds all possible tiles
+	OutputTilemap                                   Tilemap
+	Width, Height, Cellsize, Checkpoints, Blocksize int
+	CollapseBlockwise                               bool
+	Superposition                                   Superposition // holds all possible tiles
 }
 
 // feed directly with tiles pre-fabricated by the caller
@@ -57,6 +58,7 @@ func NewWaveFromProject(projectname, level string, width, height, checkpoints in
 	// FIXME: this is the point where we could pre-populate!
 	wave.OutputTilemap.Populate(wave.Superposition)
 
+	wave.DetermineBlocksize()
 	return wave, nil
 }
 
@@ -107,7 +109,16 @@ func (wave *Wave) SetupSuperpositionLDTK(project *LDTKProject, level string) err
 
 // Collapse the wave
 func (wave *Wave) Collapse(retries int) error {
-	return wave.OutputTilemap.Collapse(retries)
+	if !wave.CollapseBlockwise {
+		return wave.OutputTilemap.Collapse(retries)
+	}
+
+	return wave.OutputTilemap.CollapseBlocks()
+}
+
+func (wave *Wave) CollapseBlocks() error {
+
+	return nil
 }
 
 func (wave *Wave) Export(filename string) error {
@@ -124,12 +135,28 @@ func (wave *Wave) Export(filename string) error {
 
 		if slot.Count() == 1 {
 			tile := slot.GetTile().Image
-			draw.Draw(renderto, bounds, tile, image.ZP, draw.Over)
+			draw.Draw(renderto, bounds, tile, image.Point{}, draw.Over)
 		} else {
 			red := color.RGBA{255, 0, 0, 255}
-			draw.Draw(renderto, bounds, &image.Uniform{red}, image.ZP, draw.Src)
+			draw.Draw(renderto, bounds, &image.Uniform{red}, image.Point{}, draw.Src)
 		}
 	}
 
 	return SavePNG(filename, renderto)
+}
+
+/*
+The target map should be large enough to accommodate > 1.5 blocks, so
+that we  can at least run  the blockwise loop four  times. Everything
+smaller isnt' worth it.
+*/
+func (wave *Wave) DetermineBlocksize() {
+	min := int(DefaultBlocksize * 1.5)
+
+	if (wave.Width >= min && wave.Height >= DefaultBlocksize) ||
+		(wave.Height >= min && wave.Width >= DefaultBlocksize) {
+		// wide enough for 1.5 blocks and tall enough for at least 1 block
+		// or the other way around
+		wave.CollapseBlockwise = true
+	}
 }

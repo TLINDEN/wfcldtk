@@ -41,3 +41,25 @@ func (tile *Tile) Dump() string {
 		tile.Id,
 	)
 }
+
+// We consider a tile to be simple if all 4 constraints are identical
+// FIXME: maybe just return the number of identical constraints?
+func (tile *Tile) IsSimple() bool {
+	// if all 4 constraints are  the same, the temporary map will have
+	// only 1 key
+	return len(map[string]int{
+		tile.Constraints[North]: 0,
+		tile.Constraints[East]:  0,
+		tile.Constraints[South]: 0,
+		tile.Constraints[West]:  0,
+	}) == 1
+}
+
+func (tile *Tile) CountConstraints() int {
+	return len(map[string]int{
+		tile.Constraints[North]: 0,
+		tile.Constraints[East]:  0,
+		tile.Constraints[South]: 0,
+		tile.Constraints[West]:  0,
+	})
+}
